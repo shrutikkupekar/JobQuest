@@ -1,10 +1,24 @@
 const BASE = (import.meta.env.VITE_API_URL || 'http://localhost:3001').replace(/\/$/, '');
 
+async function getAuthHeader() {
+  if (typeof window === 'undefined') return {};
+
+  const token = await window.Clerk?.session?.getToken?.();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 async function request(path, options = {}) {
+  const authHeader = await getAuthHeader();
+  const headers = {
+    'Content-Type': 'application/json',
+    ...authHeader,
+    ...(options.headers || {}),
+  };
+
   const res = await fetch(`${BASE}${path}`, {
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
     ...options,
+    headers,
   });
   if (res.status === 204) return null;
   const data = await res.json().catch(() => null);
