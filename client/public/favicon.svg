@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Jobquest favicon">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#1d1b1a"/>
+      <stop offset="100%" stop-color="#2a221d"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="18" fill="url(#bg)"/>
+  <path d="M22 16h12c8.8 0 16 7.2 16 16v16h-8V32c0-4.4-3.6-8-8-8H22V16z" fill="#f4b75d"/>
+  <path d="M22 16h16v8H22zM22 30h21v8H22z" fill="#f4b75d" opacity="0.9"/>
+  <circle cx="44" cy="18" r="4" fill="#f4b75d"/>
+</svg>

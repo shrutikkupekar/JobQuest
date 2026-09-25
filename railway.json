@@ -1,0 +1,7 @@
+{
+  "build": { "builder": "NIXPACKS" },
+  "deploy": {
+    "startCommand": "cd server && npm install && node index.js",
+    "healthcheckPath": "/api/jobs"
+  }
+}
