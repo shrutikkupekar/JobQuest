@@ -186,17 +186,31 @@ export default function App() {
           <Route
             path="/sign-in/*"
             element={
-              <AuthShell>
-                <SignIn routing="path" path="/sign-in" signUpUrl="/sign-up" afterSignInUrl="/" />
-              </AuthShell>
+              <>
+                <SignedIn>
+                  <Navigate to="/" replace />
+                </SignedIn>
+                <SignedOut>
+                  <AuthShell>
+                    <SignIn routing="path" path="/sign-in" signUpUrl="/sign-up" afterSignInUrl="/" />
+                  </AuthShell>
+                </SignedOut>
+              </>
             }
           />
           <Route
             path="/sign-up/*"
             element={
-              <AuthShell>
-                <SignUp routing="path" path="/sign-up" signInUrl="/sign-in" afterSignUpUrl="/" />
-              </AuthShell>
+              <>
+                <SignedIn>
+                  <Navigate to="/" replace />
+                </SignedIn>
+                <SignedOut>
+                  <AuthShell>
+                    <SignUp routing="path" path="/sign-up" signInUrl="/sign-in" afterSignUpUrl="/" />
+                  </AuthShell>
+                </SignedOut>
+              </>
             }
           />
           <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
