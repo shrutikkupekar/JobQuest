@@ -1,0 +1,5 @@
+[phases.setup]
+nixPkgs = ["nodejs-18_x", "python311", "gcc", "gnumake"]
+
+[phases.install]
+cmds = ["npm install"]
