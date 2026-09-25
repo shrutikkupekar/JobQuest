@@ -13,6 +13,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       publishableKey={publishableKey || 'pk_test_placeholder'}
       afterSignInUrl="/"
       afterSignUpUrl="/"
+      signInUrl="/sign-in"
+      signUpUrl="/sign-up"
     >
       <BrowserRouter>
         <App />

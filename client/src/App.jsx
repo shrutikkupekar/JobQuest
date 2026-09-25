@@ -192,7 +192,13 @@ export default function App() {
                 </SignedIn>
                 <SignedOut>
                   <AuthShell>
-                    <SignIn routing="path" path="/sign-in" signUpUrl="/sign-up" afterSignInUrl="/" />
+                    <SignIn
+                      routing="path"
+                      path="/sign-in"
+                      signUpUrl="/sign-up"
+                      afterSignInUrl="/"
+                      redirectUrl="/"
+                    />
                   </AuthShell>
                 </SignedOut>
               </>
