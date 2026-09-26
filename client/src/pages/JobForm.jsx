@@ -41,7 +41,7 @@ export default function JobForm() {
   useEffect(() => {
     async function loadResumes() {
       const resumes = await loadStoredResumes();
-      setSavedResumes(resumes);
+      setSavedResumes(Array.isArray(resumes) ? resumes : []);
     }
 
     loadResumes();
@@ -99,6 +99,8 @@ export default function JobForm() {
       setSaving(false);
     }
   }
+
+  const safeSavedResumes = savedResumes || [];
 
   if (loading) return <p className="muted">Loading…</p>;
 
@@ -171,7 +173,7 @@ export default function JobForm() {
               Resume Used
               <select value={form.resume_used || ''} onChange={set('resume_used')}>
                 <option value="">No resume selected</option>
-                {savedResumes.map((resume) => (
+                {(safeSavedResumes || []).map((resume) => (
                   <option key={resume.id} value={resume.id}>
                     {resume.name}
                   </option>

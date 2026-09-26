@@ -20,7 +20,7 @@ export default function Resumes() {
   async function refreshResumes() {
     setLoading(true);
     const stored = await loadStoredResumes();
-    setResumes(stored);
+    setResumes(Array.isArray(stored) ? stored : []);
     setLoading(false);
   }
 
@@ -58,6 +58,8 @@ export default function Resumes() {
     setResumes(nextResumes);
   }
 
+  const safeResumes = resumes || [];
+
   return (
     <section>
       <div className="page-header">
@@ -83,16 +85,16 @@ export default function Resumes() {
       <div className="card">
         <div className="resume-summary">
           <h2>Saved Resumes</h2>
-          <span className="resume-total">{resumes.length} file(s)</span>
+          <span className="resume-total">{safeResumes.length} file(s)</span>
         </div>
 
         {loading ? (
           <p className="muted">Loading…</p>
-        ) : resumes.length === 0 ? (
+        ) : safeResumes.length === 0 ? (
           <p className="muted">No resumes saved yet.</p>
         ) : (
           <div className="resume-list">
-            {resumes.map((resume) => (
+            {(safeResumes || []).map((resume) => (
               <div key={resume.id} className="resume-item">
                 <div className="resume-meta">
                   <strong>{resume.name}</strong>
@@ -112,7 +114,7 @@ export default function Resumes() {
           </div>
         )}
 
-        {resumes.length > 0 && (
+        {safeResumes.length > 0 && (
           <p className="muted resume-total-row">Total storage: {Math.max(1, Math.round(totalSize / 1024))} KB</p>
         )}
       </div>

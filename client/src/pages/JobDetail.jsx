@@ -83,6 +83,7 @@ export default function JobDetail() {
   if (!job) return <p className="muted">Loading…</p>;
 
   const selectedResume = getResumeById(job.resume_used);
+  const safeFollowups = followups || [];
 
   return (
     <section>
@@ -177,11 +178,11 @@ export default function JobDetail() {
           </button>
         </form>
 
-        {followups.length === 0 ? (
+        {safeFollowups.length === 0 ? (
           <p className="muted">No follow-ups logged yet.</p>
         ) : (
           <ul className="followup-list">
-            {followups.map((f) => (
+            {(safeFollowups || []).map((f) => (
               <li key={f.id}>
                 <span className="followup-date">{f.date}</span>
                 <span className={`tag tag-${f.type}`}>{f.type}</span>
