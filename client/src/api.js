@@ -3,6 +3,22 @@ const BASE = (import.meta.env.VITE_API_URL || 'http://localhost:3001').replace(/
 async function getAuthHeader() {
   if (typeof window === 'undefined') return {};
 
+  if (window.Clerk && !window.Clerk.session) {
+    await new Promise((resolve) => {
+      const interval = setInterval(() => {
+        if (window.Clerk?.session) {
+          clearInterval(interval);
+          resolve();
+        }
+      }, 100);
+
+      setTimeout(() => {
+        clearInterval(interval);
+        resolve();
+      }, 3000);
+    });
+  }
+
   const token = await window.Clerk?.session?.getToken?.();
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
