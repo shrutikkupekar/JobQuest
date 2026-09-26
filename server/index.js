@@ -7,17 +7,28 @@ const db = require('./db');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-const allowedOrigin = process.env.ALLOWED_ORIGIN || '*';
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+
+    if (
+      origin.endsWith('.vercel.app') ||
+      origin === process.env.ALLOWED_ORIGIN ||
+      origin === 'http://localhost:5173'
+    ) {
+      return callback(null, true);
+    }
+
+    callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
 app.use(express.json({ limit: '10mb' }));
-app.use(
-  cors({
-    origin:
-      allowedOrigin === '*'
-        ? true
-        : allowedOrigin.split(',').map((o) => o.trim().replace(/\/$/, '')),
-    credentials: true,
-  })
-);
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use('/api', clerkMiddleware());
 app.use('/api', (req, res, next) => {
   const { userId } = getAuth(req);
