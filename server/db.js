@@ -66,7 +66,6 @@ function initializeDatabase() {
     CREATE INDEX IF NOT EXISTS idx_jobs_user_id ON jobs(user_id);
     CREATE INDEX IF NOT EXISTS idx_followups_job_id ON followups(job_id);
     CREATE INDEX IF NOT EXISTS idx_resumes_user_id ON resumes(user_id);
-    CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email);
   `);
 
   const tableInfo = db.prepare('PRAGMA table_info(jobs)').all();
@@ -78,20 +77,53 @@ function initializeDatabase() {
   }
 
   const userColumns = db.prepare('PRAGMA table_info(users)').all();
-  const addUserColumn = (name, statement) => {
-    if (!userColumns.some((column) => column.name === name)) {
-      db.exec(statement);
-    }
-  };
+  const requiredUserColumns = [
+    'user_id',
+    'id',
+    'email',
+    'password_hash',
+    'created_at',
+    'xp',
+    'streak_days',
+    'last_active_date',
+    'weekly_goal',
+  ];
 
-  addUserColumn('id', "ALTER TABLE users ADD COLUMN id INTEGER");
-  addUserColumn('email', "ALTER TABLE users ADD COLUMN email TEXT UNIQUE");
-  addUserColumn('password_hash', "ALTER TABLE users ADD COLUMN password_hash TEXT");
-  addUserColumn('created_at', "ALTER TABLE users ADD COLUMN created_at TEXT NOT NULL DEFAULT (datetime('now'))");
-  addUserColumn('xp', "ALTER TABLE users ADD COLUMN xp INTEGER NOT NULL DEFAULT 0");
-  addUserColumn('streak_days', "ALTER TABLE users ADD COLUMN streak_days INTEGER NOT NULL DEFAULT 0");
-  addUserColumn('last_active_date', "ALTER TABLE users ADD COLUMN last_active_date TEXT");
-  addUserColumn('weekly_goal', "ALTER TABLE users ADD COLUMN weekly_goal INTEGER NOT NULL DEFAULT 5");
+  const hasAllUserColumns = requiredUserColumns.every((columnName) =>
+    userColumns.some((column) => column.name === columnName)
+  );
+
+  if (!hasAllUserColumns && userColumns.length) {
+    const legacyColumns = db.prepare('PRAGMA table_info(users)').all().map((column) => column.name);
+    db.exec('ALTER TABLE users RENAME TO users_legacy');
+    db.exec(`
+      CREATE TABLE users (
+        user_id          TEXT PRIMARY KEY,
+        id               INTEGER,
+        email            TEXT UNIQUE,
+        password_hash    TEXT,
+        created_at       TEXT NOT NULL DEFAULT (datetime('now')),
+        xp               INTEGER NOT NULL DEFAULT 0,
+        streak_days      INTEGER NOT NULL DEFAULT 0,
+        last_active_date TEXT,
+        weekly_goal      INTEGER NOT NULL DEFAULT 5
+      )
+    `);
+
+    const selectExpressions = requiredUserColumns.map((columnName) => {
+      if (legacyColumns.includes(columnName)) return columnName;
+      if (columnName === 'created_at') return "datetime('now') AS created_at";
+      if (columnName === 'xp') return '0 AS xp';
+      if (columnName === 'streak_days') return '0 AS streak_days';
+      if (columnName === 'weekly_goal') return '5 AS weekly_goal';
+      return 'NULL AS ' + columnName;
+    });
+
+    db.exec(
+      `INSERT INTO users (${requiredUserColumns.join(', ')}) SELECT ${selectExpressions.join(', ')} FROM users_legacy`
+    );
+    db.exec('DROP TABLE users_legacy');
+  }
 
   db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email)');
 }

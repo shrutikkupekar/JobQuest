@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useApi } from '../ApiContext.jsx';
 import { STATUSES, formatDateTime, formatRelativeDate } from '../api.js';
 import StatusSelect from '../components/StatusSelect.jsx';
@@ -16,6 +16,7 @@ const COLUMNS = [
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const location = useLocation();
   const api = useApi();
   const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 767);
   const [jobs, setJobs] = useState([]);
@@ -56,12 +57,14 @@ export default function Dashboard() {
   }
 
   useEffect(() => {
+    setLoading(true);
+    setError('');
     refreshDashboard();
 
     const handleResize = () => setIsMobile(window.innerWidth <= 767);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [api, location.key]);
 
   const counts = useMemo(() => {
     const c = { all: jobs.length };

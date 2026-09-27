@@ -95,7 +95,11 @@ export default function JobForm() {
       if (saved?.xpAward) {
         showToast(`+${saved.xpAward.xpDelta} XP`);
       }
-      navigate(`/jobs/${saved.id}`);
+      if (isEdit) {
+        navigate(`/jobs/${saved.id}`);
+      } else {
+        navigate('/');
+      }
     } catch (err) {
       setError(err.message);
       setSaving(false);

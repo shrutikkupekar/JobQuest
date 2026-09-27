@@ -11,6 +11,7 @@ async function request(path, getToken, options = {}) {
 
   const res = await fetch(`${BASE}${path}`, {
     ...options,
+    cache: 'no-store',
     headers,
   });
 

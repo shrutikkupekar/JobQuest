@@ -74,6 +74,7 @@ function MobileNavIcon({ type }) {
 
 export default function App() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [token, setToken] = useState(() => localStorage.getItem('jq_token'));
   const [theme, setTheme] = useState(() => localStorage.getItem('job-tracker-theme') || 'dark');
   const [profile, setProfile] = useState(null);
@@ -228,7 +229,7 @@ export default function App() {
                 )
               }
             />
-            <Route path="/" element={<ProtectedRoute isAuthenticated={isAuthenticated}><Dashboard /></ProtectedRoute>} />
+            <Route path="/" element={<ProtectedRoute isAuthenticated={isAuthenticated}><Dashboard key={location.pathname} /></ProtectedRoute>} />
             <Route path="/resumes" element={<ProtectedRoute isAuthenticated={isAuthenticated}><Resumes /></ProtectedRoute>} />
             <Route path="/jobs/new" element={<ProtectedRoute isAuthenticated={isAuthenticated}><JobForm /></ProtectedRoute>} />
             <Route path="/jobs/:id" element={<ProtectedRoute isAuthenticated={isAuthenticated}><JobDetail /></ProtectedRoute>} />
