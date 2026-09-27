@@ -64,7 +64,7 @@ export default function Dashboard() {
     const handleResize = () => setIsMobile(window.innerWidth <= 767);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [api, location.key]);
+ }, [api, location.state?.refresh]);
 
   const counts = useMemo(() => {
     const c = { all: jobs.length };
