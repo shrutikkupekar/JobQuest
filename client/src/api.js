@@ -1,38 +1,14 @@
 const BASE = (import.meta.env.VITE_API_URL || 'http://localhost:3001').replace(/\/$/, '');
 
-async function getAuthHeader() {
-  if (typeof window === 'undefined') return {};
-
-  if (window.Clerk && !window.Clerk.session) {
-    await new Promise((resolve) => {
-      const interval = setInterval(() => {
-        if (window.Clerk?.session) {
-          clearInterval(interval);
-          resolve();
-        }
-      }, 100);
-
-      setTimeout(() => {
-        clearInterval(interval);
-        resolve();
-      }, 3000);
-    });
-  }
-
-  const token = await window.Clerk?.session?.getToken?.();
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
-
-async function request(path, options = {}) {
-  const authHeader = await getAuthHeader();
+async function request(path, getToken, options = {}) {
+  const token = await getToken();
   const headers = {
     'Content-Type': 'application/json',
-    ...authHeader,
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(options.headers || {}),
   };
 
   const res = await fetch(`${BASE}${path}`, {
-    credentials: 'include',
     ...options,
     headers,
   });
@@ -42,26 +18,29 @@ async function request(path, options = {}) {
   return data;
 }
 
+export function makeApi(getToken) {
+  const r = (path, options) => request(path, getToken, options);
+
+  return {
+    getMe: () => r('/api/me'),
+    updateGoal: (weeklyGoal) =>
+      r('/api/me', { method: 'PUT', body: JSON.stringify({ weekly_goal: weeklyGoal }) }),
+    getDashboard: () => r('/api/dashboard'),
+    listJobs: () => r('/api/jobs'),
+    getJob: (id) => r(`/api/jobs/${id}`),
+    createJob: (job) => r('/api/jobs', { method: 'POST', body: JSON.stringify(job) }),
+    updateJob: (id, job) => r(`/api/jobs/${id}`, { method: 'PUT', body: JSON.stringify(job) }),
+    deleteJob: (id) => r(`/api/jobs/${id}`, { method: 'DELETE' }),
+    listFollowups: (id) => r(`/api/jobs/${id}/followups`),
+    addFollowup: (id, f) => r(`/api/jobs/${id}/followups`, { method: 'POST', body: JSON.stringify(f) }),
+    listResumes: () => r('/api/resumes'),
+    createResume: (resume) => r('/api/resumes', { method: 'POST', body: JSON.stringify(resume) }),
+    deleteResume: (id) => r(`/api/resumes/${id}`, { method: 'DELETE' }),
+  };
+}
+
 export const STATUSES = ['applied', 'interviewing', 'offer', 'rejected', 'followup'];
 export const FOLLOWUP_TYPES = ['call', 'email', 'interview', 'other'];
-
-export const api = {
-  getMe: () => request('/api/me'),
-  updateGoal: (weeklyGoal) =>
-    request('/api/me', { method: 'PUT', body: JSON.stringify({ weekly_goal: weeklyGoal }) }),
-  getDashboard: () => request('/api/dashboard'),
-  listJobs: () => request('/api/jobs'),
-  getJob: (id) => request(`/api/jobs/${id}`),
-  createJob: (job) => request('/api/jobs', { method: 'POST', body: JSON.stringify(job) }),
-  updateJob: (id, job) => request(`/api/jobs/${id}`, { method: 'PUT', body: JSON.stringify(job) }),
-  deleteJob: (id) => request(`/api/jobs/${id}`, { method: 'DELETE' }),
-  listFollowups: (id) => request(`/api/jobs/${id}/followups`),
-  addFollowup: (id, f) =>
-    request(`/api/jobs/${id}/followups`, { method: 'POST', body: JSON.stringify(f) }),
-  listResumes: () => request('/api/resumes'),
-  createResume: (resume) => request('/api/resumes', { method: 'POST', body: JSON.stringify(resume) }),
-  deleteResume: (id) => request(`/api/resumes/${id}`, { method: 'DELETE' }),
-};
 
 // SQLite datetime('now') is UTC without a zone marker.
 export function formatDateTime(value) {

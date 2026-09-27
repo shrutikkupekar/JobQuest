@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useApi } from '../ApiContext.jsx';
 import {
   createStoredResume,
   deleteStoredResume,
@@ -8,6 +9,7 @@ import {
 } from '../resumes.js';
 
 export default function Resumes() {
+  const api = useApi();
   const [resumes, setResumes] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -19,14 +21,14 @@ export default function Resumes() {
 
   async function refreshResumes() {
     setLoading(true);
-    const stored = await loadStoredResumes();
+    const stored = await loadStoredResumes(api);
     setResumes(Array.isArray(stored) ? stored : []);
     setLoading(false);
   }
 
   useEffect(() => {
     refreshResumes();
-  }, []);
+  }, [api]);
 
   async function handleUpload(e) {
     const file = e.target.files?.[0];
@@ -45,7 +47,7 @@ export default function Resumes() {
         createdAt: new Date().toISOString(),
       };
 
-      const created = await createStoredResume(nextResume);
+      const created = await createStoredResume(api, nextResume);
       setResumes((items) => [created, ...items.filter((resume) => resume.id !== created.id)]);
       setError('');
     } catch (err) {
@@ -54,7 +56,7 @@ export default function Resumes() {
   }
 
   async function handleDelete(id) {
-    const nextResumes = await deleteStoredResume(id);
+    const nextResumes = await deleteStoredResume(api, id);
     setResumes(nextResumes);
   }
 

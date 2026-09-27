@@ -9,7 +9,8 @@ import {
   useUser,
 } from '@clerk/clerk-react';
 import { Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom';
-import { api } from './api.js';
+import { ApiProvider } from './ApiContext.jsx';
+import { makeApi } from './api.js';
 import Dashboard from './pages/Dashboard.jsx';
 import JobForm from './pages/JobForm.jsx';
 import JobDetail from './pages/JobDetail.jsx';
@@ -82,6 +83,8 @@ function MobileNavIcon({ type }) {
 
 export default function App() {
   const { user } = useUser();
+  const { getToken } = useAuth();
+  const api = useMemo(() => makeApi(getToken), [getToken]);
   const greeting = user?.firstName || user?.fullName || 'there';
   const [theme, setTheme] = useState(() => localStorage.getItem('job-tracker-theme') || 'dark');
   const [profile, setProfile] = useState(null);
@@ -102,7 +105,7 @@ export default function App() {
       .getMe()
       .then(setProfile)
       .catch(() => setProfile(null));
-  }, [user]);
+  }, [user, api]);
 
   useEffect(() => {
     const onToast = (event) => {
@@ -134,121 +137,123 @@ export default function App() {
   };
 
   return (
-    <div className="app-shell">
-      <header className="topbar">
-        <NavLink to="/" className="brand">
-          Jobquest
-        </NavLink>
-
-        <SignedIn>
-          <div className="topbar-center">
-            <div className="xp-cluster">
-              <div className="xp-meta">
-                <span>Level {level}</span>
-                <span>· {xp} XP</span>
-                <span>· {levelName}</span>
-              </div>
-              <div className="xp-bar">
-                <span style={{ width: `${progressPercent}%` }} />
-              </div>
-            </div>
-            <div className="streak-badge">🔥 {profile?.streak_days || 0}</div>
-          </div>
-        </SignedIn>
-
-        <div className="topbar-right">
-          <button
-            type="button"
-            className="theme-toggle"
-            onClick={() => setTheme((current) => (current === 'dark' ? 'light' : 'dark'))}
-            aria-label="Toggle theme"
-          >
-            {theme === 'dark' ? '☀️' : '🌙'}
-          </button>
+    <ApiProvider api={api}>
+      <div className="app-shell">
+        <header className="topbar">
+          <NavLink to="/" className="brand">
+            Jobquest
+          </NavLink>
 
           <SignedIn>
-            <div className="user-menu">
-              <span className="user-greeting">Hi {greeting}</span>
-              <UserButton afterSignOutUrl="/" />
+            <div className="topbar-center">
+              <div className="xp-cluster">
+                <div className="xp-meta">
+                  <span>Level {level}</span>
+                  <span>· {xp} XP</span>
+                  <span>· {levelName}</span>
+                </div>
+                <div className="xp-bar">
+                  <span style={{ width: `${progressPercent}%` }} />
+                </div>
+              </div>
+              <div className="streak-badge">🔥 {profile?.streak_days || 0}</div>
             </div>
           </SignedIn>
 
-          <SignedOut>
-            <NavLink to="/sign-in" className="btn btn-primary">
-              Sign in
-            </NavLink>
-          </SignedOut>
-        </div>
-      </header>
+          <div className="topbar-right">
+            <button
+              type="button"
+              className="theme-toggle"
+              onClick={() => setTheme((current) => (current === 'dark' ? 'light' : 'dark'))}
+              aria-label="Toggle theme"
+            >
+              {theme === 'dark' ? '☀️' : '🌙'}
+            </button>
 
-      <main className="content">
-        <Routes>
-          <Route
-            path="/sign-in/*"
-            element={
-              <>
-                <SignedIn>
-                  <Navigate to="/" replace />
-                </SignedIn>
-                <SignedOut>
-                  <AuthShell>
-                    <SignIn
-                      routing="path"
-                      path="/sign-in"
-                      signUpUrl="/sign-up"
-                      forceRedirectUrl="/"
-                    />
-                  </AuthShell>
-                </SignedOut>
-              </>
-            }
-          />
-          <Route
-            path="/sign-up/*"
-            element={
-              <>
-                <SignedIn>
-                  <Navigate to="/" replace />
-                </SignedIn>
-                <SignedOut>
-                  <AuthShell>
-                    <SignUp routing="path" path="/sign-up" signInUrl="/sign-in" forceRedirectUrl="/" />
-                  </AuthShell>
-                </SignedOut>
-              </>
-            }
-          />
-          <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/resumes" element={<ProtectedRoute><Resumes /></ProtectedRoute>} />
-          <Route path="/jobs/new" element={<ProtectedRoute><JobForm /></ProtectedRoute>} />
-          <Route path="/jobs/:id" element={<ProtectedRoute><JobDetail /></ProtectedRoute>} />
-          <Route path="/jobs/:id/edit" element={<ProtectedRoute><JobForm /></ProtectedRoute>} />
-          <Route path="*" element={<p className="muted">Page not found.</p>} />
-        </Routes>
-      </main>
+            <SignedIn>
+              <div className="user-menu">
+                <span className="user-greeting">Hi {greeting}</span>
+                <UserButton afterSignOutUrl="/" />
+              </div>
+            </SignedIn>
 
-      <nav className="mobile-bottom-nav" aria-label="Mobile navigation">
-        <NavLink to="/" className={({ isActive }) => `mobile-nav-item ${isActive ? 'active' : ''}`} end>
-          <MobileNavIcon type="dashboard" />
-          <span>Dashboard</span>
-        </NavLink>
-        <NavLink to="/jobs/new" className={({ isActive }) => `mobile-nav-item ${isActive ? 'active' : ''}`}>
-          <MobileNavIcon type="add" />
-          <span>Add Job</span>
-        </NavLink>
-        <NavLink to="/" className={({ isActive }) => `mobile-nav-item ${isActive ? 'active' : ''}`} onClick={handleMobileStatsClick}>
-          <MobileNavIcon type="stats" />
-          <span>Stats</span>
-        </NavLink>
-      </nav>
-
-      <div className="toast-stack" aria-live="polite">
-        {toasts.map((toast) => (
-          <div key={toast.id} className={`toast toast-${toast.tone}`}>
-            {toast.message}
+            <SignedOut>
+              <NavLink to="/sign-in" className="btn btn-primary">
+                Sign in
+              </NavLink>
+            </SignedOut>
           </div>
-        ))}
+        </header>
+
+        <main className="content">
+          <Routes>
+            <Route
+              path="/sign-in/*"
+              element={
+                <>
+                  <SignedIn>
+                    <Navigate to="/" replace />
+                  </SignedIn>
+                  <SignedOut>
+                    <AuthShell>
+                      <SignIn
+                        routing="path"
+                        path="/sign-in"
+                        signUpUrl="/sign-up"
+                        forceRedirectUrl="/"
+                      />
+                    </AuthShell>
+                  </SignedOut>
+                </>
+              }
+            />
+            <Route
+              path="/sign-up/*"
+              element={
+                <>
+                  <SignedIn>
+                    <Navigate to="/" replace />
+                  </SignedIn>
+                  <SignedOut>
+                    <AuthShell>
+                      <SignUp routing="path" path="/sign-up" signInUrl="/sign-in" forceRedirectUrl="/" />
+                    </AuthShell>
+                  </SignedOut>
+                </>
+              }
+            />
+            <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/resumes" element={<ProtectedRoute><Resumes /></ProtectedRoute>} />
+            <Route path="/jobs/new" element={<ProtectedRoute><JobForm /></ProtectedRoute>} />
+            <Route path="/jobs/:id" element={<ProtectedRoute><JobDetail /></ProtectedRoute>} />
+            <Route path="/jobs/:id/edit" element={<ProtectedRoute><JobForm /></ProtectedRoute>} />
+            <Route path="*" element={<p className="muted">Page not found.</p>} />
+          </Routes>
+        </main>
+
+        <nav className="mobile-bottom-nav" aria-label="Mobile navigation">
+          <NavLink to="/" className={({ isActive }) => `mobile-nav-item ${isActive ? 'active' : ''}`} end>
+            <MobileNavIcon type="dashboard" />
+            <span>Dashboard</span>
+          </NavLink>
+          <NavLink to="/jobs/new" className={({ isActive }) => `mobile-nav-item ${isActive ? 'active' : ''}`}>
+            <MobileNavIcon type="add" />
+            <span>Add Job</span>
+          </NavLink>
+          <NavLink to="/" className={({ isActive }) => `mobile-nav-item ${isActive ? 'active' : ''}`} onClick={handleMobileStatsClick}>
+            <MobileNavIcon type="stats" />
+            <span>Stats</span>
+          </NavLink>
+        </nav>
+
+        <div className="toast-stack" aria-live="polite">
+          {toasts.map((toast) => (
+            <div key={toast.id} className={`toast toast-${toast.tone}`}>
+              {toast.message}
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
+    </ApiProvider>
   );
 }

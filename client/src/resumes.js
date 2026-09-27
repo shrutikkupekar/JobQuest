@@ -1,5 +1,3 @@
-import { api } from './api.js';
-
 export const RESUME_STORAGE_KEY = 'job-tracker-resumes';
 
 export function readStoredResumes() {
@@ -17,7 +15,7 @@ export function saveStoredResumes(resumes) {
   return resumes;
 }
 
-export async function loadStoredResumes() {
+export async function loadStoredResumes(api) {
   try {
     const resumes = await api.listResumes();
     saveStoredResumes(resumes);
@@ -28,7 +26,7 @@ export async function loadStoredResumes() {
   }
 }
 
-export async function createStoredResume(payload) {
+export async function createStoredResume(api, payload) {
   try {
     const created = await api.createResume(payload);
     const next = [created, ...readStoredResumes().filter((resume) => resume.id !== created.id)];
@@ -41,7 +39,7 @@ export async function createStoredResume(payload) {
   }
 }
 
-export async function deleteStoredResume(id) {
+export async function deleteStoredResume(api, id) {
   try {
     await api.deleteResume(id);
   } catch {

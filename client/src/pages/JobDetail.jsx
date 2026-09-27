@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { api, FOLLOWUP_TYPES, formatDateTime, formatRelativeDate } from '../api.js';
+import { useApi } from '../ApiContext.jsx';
+import { FOLLOWUP_TYPES, formatDateTime, formatRelativeDate } from '../api.js';
 import StatusSelect from '../components/StatusSelect.jsx';
 import { getResumeById } from '../resumes.js';
 import { showToast } from '../toast.js';
@@ -18,6 +19,7 @@ function Field({ label, children }) {
 
 export default function JobDetail() {
   const { id } = useParams();
+  const api = useApi();
   const navigate = useNavigate();
   const [job, setJob] = useState(null);
   const [followups, setFollowups] = useState([]);
@@ -33,7 +35,7 @@ export default function JobDetail() {
         setFollowups(f);
       })
       .catch((e) => setError(e.message));
-  }, [id]);
+  }, [api, id]);
 
   async function changeStatus(status) {
     try {

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { api, STATUSES } from '../api.js';
+import { useApi } from '../ApiContext.jsx';
+import { STATUSES } from '../api.js';
 import {
   createStoredResume,
   getResumeById,
@@ -26,6 +27,7 @@ const EMPTY = {
 export default function JobForm() {
   const { id } = useParams();
   const isEdit = Boolean(id);
+  const api = useApi();
   const navigate = useNavigate();
   const [form, setForm] = useState(EMPTY);
   const [loading, setLoading] = useState(isEdit);
@@ -40,7 +42,7 @@ export default function JobForm() {
 
   useEffect(() => {
     async function loadResumes() {
-      const resumes = await loadStoredResumes();
+      const resumes = await loadStoredResumes(api);
       setSavedResumes(Array.isArray(resumes) ? resumes : []);
     }
 
@@ -55,7 +57,7 @@ export default function JobForm() {
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [id, isEdit]);
+  }, [api, id, isEdit]);
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
@@ -75,7 +77,7 @@ export default function JobForm() {
         dataUrl,
         createdAt: new Date().toISOString(),
       };
-      const created = await createStoredResume(nextResume);
+      const created = await createStoredResume(api, nextResume);
       setSavedResumes((items) => [created, ...items.filter((resume) => resume.id !== created.id)]);
       setForm((f) => ({ ...f, resume_used: created.id }));
     } catch (err) {

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { api, STATUSES, formatDateTime, formatRelativeDate } from '../api.js';
+import { useApi } from '../ApiContext.jsx';
+import { STATUSES, formatDateTime, formatRelativeDate } from '../api.js';
 import StatusSelect from '../components/StatusSelect.jsx';
 import { showToast } from '../toast.js';
 
@@ -15,6 +16,7 @@ const COLUMNS = [
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const api = useApi();
   const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 767);
   const [jobs, setJobs] = useState([]);
   const [stats, setStats] = useState({
