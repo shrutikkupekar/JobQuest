@@ -248,7 +248,7 @@ export default function Dashboard() {
               </div>
             </div>
           ))}
-          {visible.length === 0 && <p className="muted center">No jobs with status “{filter}”.</p>}
+          {visible.length === 0 && <p className="muted center">No jobs with status "{filter}".</p>}
         </div>
       ) : (
         <div className="table-wrap">
@@ -281,7 +281,7 @@ export default function Dashboard() {
               {visible.length === 0 && (
                 <tr>
                   <td colSpan={COLUMNS.length} className="muted center">
-                    No jobs with status “{filter}”.
+                    No jobs with status "{filter}".
                   </td>
                 </tr>
               )}
