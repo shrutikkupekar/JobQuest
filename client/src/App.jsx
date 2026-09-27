@@ -1,28 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
-import {
-  SignIn,
-  SignUp,
-  SignedIn,
-  SignedOut,
-  UserButton,
-  useAuth,
-  useUser,
-} from '@clerk/clerk-react';
-import { Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom';
+import { Navigate, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { ApiProvider } from './ApiContext.jsx';
 import { makeApi } from './api.js';
 import Dashboard from './pages/Dashboard.jsx';
 import JobForm from './pages/JobForm.jsx';
 import JobDetail from './pages/JobDetail.jsx';
 import Resumes from './pages/Resumes.jsx';
+import Login from './pages/Login.jsx';
+import Signup from './pages/Signup.jsx';
 
-function ProtectedRoute({ children }) {
-  const { isLoaded, isSignedIn } = useAuth();
+function ProtectedRoute({ children, isAuthenticated }) {
   const location = useLocation();
 
-  if (!isLoaded) return <p className="muted">Loading…</p>;
-  if (!isSignedIn) {
-    return <Navigate to="/sign-in" replace state={{ from: location.pathname }} />;
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
 
   return children;
@@ -82,13 +73,18 @@ function MobileNavIcon({ type }) {
 }
 
 export default function App() {
-  const { user } = useUser();
-  const { getToken } = useAuth();
-  const api = useMemo(() => makeApi(getToken), [getToken]);
-  const greeting = user?.firstName || user?.fullName || 'there';
+  const navigate = useNavigate();
+  const [token, setToken] = useState(() => localStorage.getItem('jq_token'));
   const [theme, setTheme] = useState(() => localStorage.getItem('job-tracker-theme') || 'dark');
   const [profile, setProfile] = useState(null);
   const [toasts, setToasts] = useState([]);
+
+  const api = useMemo(
+    () => makeApi(async () => localStorage.getItem('jq_token')),
+    [token]
+  );
+  const isAuthenticated = Boolean(token);
+  const greeting = profile?.email || 'there';
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -96,7 +92,7 @@ export default function App() {
   }, [theme]);
 
   useEffect(() => {
-    if (!user) {
+    if (!token) {
       setProfile(null);
       return;
     }
@@ -104,8 +100,12 @@ export default function App() {
     api
       .getMe()
       .then(setProfile)
-      .catch(() => setProfile(null));
-  }, [user, api]);
+      .catch(() => {
+        localStorage.removeItem('jq_token');
+        setToken(null);
+        setProfile(null);
+      });
+  }, [token, api]);
 
   useEffect(() => {
     const onToast = (event) => {
@@ -136,6 +136,13 @@ export default function App() {
     });
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('jq_token');
+    setToken(null);
+    setProfile(null);
+    navigate('/login');
+  };
+
   return (
     <ApiProvider api={api}>
       <div className="app-shell">
@@ -144,7 +151,7 @@ export default function App() {
             Jobquest
           </NavLink>
 
-          <SignedIn>
+          {isAuthenticated && (
             <div className="topbar-center">
               <div className="xp-cluster">
                 <div className="xp-meta">
@@ -158,7 +165,7 @@ export default function App() {
               </div>
               <div className="streak-badge">🔥 {profile?.streak_days || 0}</div>
             </div>
-          </SignedIn>
+          )}
 
           <div className="topbar-right">
             <button
@@ -170,81 +177,82 @@ export default function App() {
               {theme === 'dark' ? '☀️' : '🌙'}
             </button>
 
-            <SignedIn>
+            {isAuthenticated ? (
               <div className="user-menu">
                 <span className="user-greeting">Hi {greeting}</span>
-                <UserButton afterSignOutUrl="/" />
+                <button type="button" className="btn btn-primary" onClick={handleLogout}>
+                  Logout
+                </button>
               </div>
-            </SignedIn>
-
-            <SignedOut>
-              <NavLink to="/sign-in" className="btn btn-primary">
+            ) : (
+              <NavLink to="/login" className="btn btn-primary">
                 Sign in
               </NavLink>
-            </SignedOut>
+            )}
           </div>
         </header>
 
         <main className="content">
           <Routes>
             <Route
-              path="/sign-in/*"
+              path="/login"
               element={
-                <>
-                  <SignedIn>
-                    <Navigate to="/" replace />
-                  </SignedIn>
-                  <SignedOut>
-                    <AuthShell>
-                      <SignIn
-                        routing="path"
-                        path="/sign-in"
-                        signUpUrl="/sign-up"
-                        forceRedirectUrl="/"
-                      />
-                    </AuthShell>
-                  </SignedOut>
-                </>
+                isAuthenticated ? (
+                  <Navigate to="/" replace />
+                ) : (
+                  <AuthShell>
+                    <Login
+                      onAuth={(nextToken) => {
+                        localStorage.setItem('jq_token', nextToken);
+                        setToken(nextToken);
+                      }}
+                    />
+                  </AuthShell>
+                )
               }
             />
             <Route
-              path="/sign-up/*"
+              path="/signup"
               element={
-                <>
-                  <SignedIn>
-                    <Navigate to="/" replace />
-                  </SignedIn>
-                  <SignedOut>
-                    <AuthShell>
-                      <SignUp routing="path" path="/sign-up" signInUrl="/sign-in" forceRedirectUrl="/" />
-                    </AuthShell>
-                  </SignedOut>
-                </>
+                isAuthenticated ? (
+                  <Navigate to="/" replace />
+                ) : (
+                  <AuthShell>
+                    <Signup
+                      onAuth={(nextToken) => {
+                        localStorage.setItem('jq_token', nextToken);
+                        setToken(nextToken);
+                      }}
+                    />
+                  </AuthShell>
+                )
               }
             />
-            <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/resumes" element={<ProtectedRoute><Resumes /></ProtectedRoute>} />
-            <Route path="/jobs/new" element={<ProtectedRoute><JobForm /></ProtectedRoute>} />
-            <Route path="/jobs/:id" element={<ProtectedRoute><JobDetail /></ProtectedRoute>} />
-            <Route path="/jobs/:id/edit" element={<ProtectedRoute><JobForm /></ProtectedRoute>} />
+            <Route path="/" element={<ProtectedRoute isAuthenticated={isAuthenticated}><Dashboard /></ProtectedRoute>} />
+            <Route path="/resumes" element={<ProtectedRoute isAuthenticated={isAuthenticated}><Resumes /></ProtectedRoute>} />
+            <Route path="/jobs/new" element={<ProtectedRoute isAuthenticated={isAuthenticated}><JobForm /></ProtectedRoute>} />
+            <Route path="/jobs/:id" element={<ProtectedRoute isAuthenticated={isAuthenticated}><JobDetail /></ProtectedRoute>} />
+            <Route path="/jobs/:id/edit" element={<ProtectedRoute isAuthenticated={isAuthenticated}><JobForm /></ProtectedRoute>} />
             <Route path="*" element={<p className="muted">Page not found.</p>} />
           </Routes>
         </main>
 
-        <nav className="mobile-bottom-nav" aria-label="Mobile navigation">
-          <NavLink to="/" className={({ isActive }) => `mobile-nav-item ${isActive ? 'active' : ''}`} end>
-            <MobileNavIcon type="dashboard" />
-            <span>Dashboard</span>
-          </NavLink>
-          <NavLink to="/jobs/new" className={({ isActive }) => `mobile-nav-item ${isActive ? 'active' : ''}`}>
-            <MobileNavIcon type="add" />
-            <span>Add Job</span>
-          </NavLink>
-          <NavLink to="/" className={({ isActive }) => `mobile-nav-item ${isActive ? 'active' : ''}`} onClick={handleMobileStatsClick}>
-            <MobileNavIcon type="stats" />
-            <span>Stats</span>
-          </NavLink>
-        </nav>
+        {isAuthenticated && (
+          <nav className="mobile-bottom-nav" aria-label="Mobile navigation">
+            <NavLink to="/" className={({ isActive }) => `mobile-nav-item ${isActive ? 'active' : ''}`} end>
+              <MobileNavIcon type="dashboard" />
+              <span>Dashboard</span>
+            </NavLink>
+            <NavLink to="/jobs/new" className={({ isActive }) => `mobile-nav-item ${isActive ? 'active' : ''}`}>
+              <MobileNavIcon type="add" />
+              <span>Add Job</span>
+            </NavLink>
+            <NavLink to="/" className={({ isActive }) => `mobile-nav-item ${isActive ? 'active' : ''}`} onClick={handleMobileStatsClick}>
+              <MobileNavIcon type="stats" />
+              <span>Stats</span>
+            </NavLink>
+          </nav>
+        )}
 
         <div className="toast-stack" aria-live="polite">
           {toasts.map((toast) => (

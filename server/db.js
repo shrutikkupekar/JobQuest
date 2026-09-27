@@ -42,6 +42,10 @@ function initializeDatabase() {
 
     CREATE TABLE IF NOT EXISTS users (
       user_id          TEXT PRIMARY KEY,
+      id               INTEGER,
+      email            TEXT UNIQUE,
+      password_hash    TEXT,
+      created_at       TEXT NOT NULL DEFAULT (datetime('now')),
       xp               INTEGER NOT NULL DEFAULT 0,
       streak_days      INTEGER NOT NULL DEFAULT 0,
       last_active_date TEXT,
@@ -62,6 +66,7 @@ function initializeDatabase() {
     CREATE INDEX IF NOT EXISTS idx_jobs_user_id ON jobs(user_id);
     CREATE INDEX IF NOT EXISTS idx_followups_job_id ON followups(job_id);
     CREATE INDEX IF NOT EXISTS idx_resumes_user_id ON resumes(user_id);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email);
   `);
 
   const tableInfo = db.prepare('PRAGMA table_info(jobs)').all();
@@ -73,17 +78,22 @@ function initializeDatabase() {
   }
 
   const userColumns = db.prepare('PRAGMA table_info(users)').all();
-  if (!userColumns.length) {
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS users (
-        user_id          TEXT PRIMARY KEY,
-        xp               INTEGER NOT NULL DEFAULT 0,
-        streak_days      INTEGER NOT NULL DEFAULT 0,
-        last_active_date TEXT,
-        weekly_goal      INTEGER NOT NULL DEFAULT 5
-      );
-    `);
-  }
+  const addUserColumn = (name, statement) => {
+    if (!userColumns.some((column) => column.name === name)) {
+      db.exec(statement);
+    }
+  };
+
+  addUserColumn('id', "ALTER TABLE users ADD COLUMN id INTEGER");
+  addUserColumn('email', "ALTER TABLE users ADD COLUMN email TEXT UNIQUE");
+  addUserColumn('password_hash', "ALTER TABLE users ADD COLUMN password_hash TEXT");
+  addUserColumn('created_at', "ALTER TABLE users ADD COLUMN created_at TEXT NOT NULL DEFAULT (datetime('now'))");
+  addUserColumn('xp', "ALTER TABLE users ADD COLUMN xp INTEGER NOT NULL DEFAULT 0");
+  addUserColumn('streak_days', "ALTER TABLE users ADD COLUMN streak_days INTEGER NOT NULL DEFAULT 0");
+  addUserColumn('last_active_date', "ALTER TABLE users ADD COLUMN last_active_date TEXT");
+  addUserColumn('weekly_goal', "ALTER TABLE users ADD COLUMN weekly_goal INTEGER NOT NULL DEFAULT 5");
+
+  db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email)');
 }
 
 initializeDatabase();

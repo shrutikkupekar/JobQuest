@@ -1,4 +1,5 @@
-const BASE = (import.meta.env.VITE_API_URL || 'http://localhost:3001').replace(/\/$/, '');
+export const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:3001').replace(/\/$/, '');
+const BASE = API_BASE;
 
 async function request(path, getToken, options = {}) {
   const token = await getToken();
@@ -12,9 +13,21 @@ async function request(path, getToken, options = {}) {
     ...options,
     headers,
   });
+
   if (res.status === 204) return null;
+
   const data = await res.json().catch(() => null);
-  if (!res.ok) throw new Error(data?.error || `Request failed (${res.status})`);
+
+  if (!res.ok) {
+    if (res.status === 401 && typeof window !== 'undefined') {
+      localStorage.removeItem('jq_token');
+      if (!window.location.pathname.startsWith('/login')) {
+        window.location.assign('/login');
+      }
+    }
+    throw new Error(data?.error || `Request failed (${res.status})`);
+  }
+
   return data;
 }
 
