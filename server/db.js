@@ -3,6 +3,7 @@ const fs = require('fs');
 const Database = require('better-sqlite3');
 
 const dbPath = process.env.DB_PATH || './data/jobs.db';
+console.log('SQLite database path:', dbPath);
 const dir = path.dirname(dbPath);
 if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 
