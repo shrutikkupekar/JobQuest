@@ -34,6 +34,9 @@ export default function Dashboard() {
   const [sort, setSort] = useState({ key: 'last_updated', dir: 'desc' });
   const [goalInput, setGoalInput] = useState('5');
   const [editingGoal, setEditingGoal] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [confirmDeleteSelected, setConfirmDeleteSelected] = useState(false);
+  const [deletingSelected, setDeletingSelected] = useState(false);
 
   function refreshDashboard() {
     api
@@ -42,6 +45,7 @@ export default function Dashboard() {
         const nextJobs = data?.jobs || [];
         const nextStats = data?.stats || {};
         setJobs(nextJobs);
+        setSelectedIds((current) => current.filter((id) => nextJobs.some((job) => job.id === id)));
         setStats({
           thisWeek: nextStats.thisWeek || 0,
           thisMonth: nextStats.thisMonth || 0,
@@ -66,6 +70,11 @@ export default function Dashboard() {
     return () => window.removeEventListener('resize', handleResize);
  }, [api, location.state?.refresh]);
 
+  // Close the confirm prompt if the selection empties (e.g. all rows unticked).
+  useEffect(() => {
+    if (selectedIds.length === 0) setConfirmDeleteSelected(false);
+  }, [selectedIds.length]);
+
   const counts = useMemo(() => {
     const c = { all: jobs.length };
     for (const s of STATUSES) c[s] = jobs.filter((j) => j.status === s).length;
@@ -89,6 +98,7 @@ export default function Dashboard() {
   }, [jobs, filter, sort]);
 
   const goalPercent = Math.min(100, (stats.goalProgress / Math.max(1, stats.weeklyGoal)) * 100);
+  const allVisibleSelected = visible.length > 0 && visible.every((job) => selectedIds.includes(job.id));
 
   function toggleSort(key) {
     setSort((s) =>
@@ -134,6 +144,53 @@ export default function Dashboard() {
     }
   }
 
+  async function handleDeleteSelected() {
+    if (selectedIds.length === 0 || deletingSelected) return;
+
+    const ids = [...selectedIds];
+    setError('');
+    setDeletingSelected(true);
+
+    const results = await Promise.allSettled(ids.map((id) => api.deleteJob(id)));
+    const failedIds = ids.filter((_, i) => results[i].status === 'rejected');
+    const deletedCount = ids.length - failedIds.length;
+
+    setDeletingSelected(false);
+    setConfirmDeleteSelected(false);
+    // Keep failed rows selected so the user can retry.
+    setSelectedIds(failedIds);
+    refreshDashboard();
+
+    if (deletedCount > 0) {
+      showToast(`${deletedCount} job${deletedCount === 1 ? '' : 's'} deleted`);
+    }
+    if (failedIds.length > 0) {
+      const firstError = results.find((r) => r.status === 'rejected').reason;
+      setError(
+        `Couldn't delete ${failedIds.length} job${failedIds.length === 1 ? '' : 's'}: ${firstError?.message || 'unknown error'}`
+      );
+    }
+  }
+
+  function toggleJobSelection(id) {
+    setSelectedIds((current) =>
+      current.includes(id) ? current.filter((item) => item !== id) : [...current, id]
+    );
+  }
+
+  function toggleSelectAllVisible() {
+    if (allVisibleSelected) {
+      setSelectedIds((current) => current.filter((id) => !visible.some((job) => job.id === id)));
+      return;
+    }
+
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      visible.forEach((job) => next.add(job.id));
+      return [...next];
+    });
+  }
+
   return (
     <section>
       <div className="page-header">
@@ -154,6 +211,54 @@ export default function Dashboard() {
             </button>
           ))}
         </div>
+      </div>
+
+      <div className="bulk-toolbar">
+        {confirmDeleteSelected ? (
+          <div className="bulk-delete-confirm" role="alert">
+            <span>
+              Delete {selectedIds.length} selected job{selectedIds.length === 1 ? '' : 's'}? Their
+              follow-ups will be deleted too. This can't be undone.
+            </span>
+            <div className="bulk-delete-actions">
+              <button
+                type="button"
+                className="btn btn-danger"
+                onClick={handleDeleteSelected}
+                disabled={deletingSelected}
+              >
+                {deletingSelected ? 'Deleting…' : 'Confirm delete'}
+              </button>
+              <button
+                type="button"
+                className="btn"
+                onClick={() => setConfirmDeleteSelected(false)}
+                disabled={deletingSelected}
+                autoFocus
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            className="btn btn-danger-outline"
+            onClick={() => setConfirmDeleteSelected(true)}
+            disabled={selectedIds.length === 0}
+          >
+            Delete selected ({selectedIds.length})
+          </button>
+        )}
+        <label className="select-all-toggle">
+          <input
+            type="checkbox"
+            checked={allVisibleSelected}
+            onChange={toggleSelectAllVisible}
+            disabled={visible.length === 0}
+          />
+          <span>Select visible</span>
+        </label>
       </div>
 
       {error && <div className="error">{error}</div>}
@@ -233,7 +338,14 @@ export default function Dashboard() {
                   <div className="mobile-job-company">{job.company}</div>
                   <div className="mobile-job-role">{job.role}</div>
                 </div>
-                <div onClick={(e) => e.stopPropagation()}>
+                <div className="mobile-job-actions" onClick={(e) => e.stopPropagation()}>
+                  <label className="row-select">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(job.id)}
+                      onChange={() => toggleJobSelection(job.id)}
+                    />
+                  </label>
                   <StatusSelect value={job.status} onChange={(s) => changeStatus(job, s)} />
                 </div>
               </div>
@@ -255,6 +367,14 @@ export default function Dashboard() {
           <table className="jobs-table">
             <thead>
               <tr>
+                <th className="selection-header">
+                  <input
+                    type="checkbox"
+                    checked={allVisibleSelected}
+                    onChange={toggleSelectAllVisible}
+                    disabled={visible.length === 0}
+                  />
+                </th>
                 {COLUMNS.map((c) => (
                   <th key={c.key} onClick={() => toggleSort(c.key)} className="sortable">
                     {c.label}
@@ -268,6 +388,13 @@ export default function Dashboard() {
             <tbody>
               {visible.map((job) => (
                 <tr key={job.id} onClick={() => navigate(`/jobs/${job.id}`)} className="clickable">
+                  <td className="selection-cell" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(job.id)}
+                      onChange={() => toggleJobSelection(job.id)}
+                    />
+                  </td>
                   <td className="strong">{job.company}</td>
                   <td>{job.role}</td>
                   <td onClick={(e) => e.stopPropagation()}>
@@ -280,7 +407,7 @@ export default function Dashboard() {
               ))}
               {visible.length === 0 && (
                 <tr>
-                  <td colSpan={COLUMNS.length} className="muted center">
+                  <td colSpan={COLUMNS.length + 1} className="muted center">
                     No jobs with status "{filter}".
                   </td>
                 </tr>

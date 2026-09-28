@@ -240,6 +240,80 @@ h2 {
   padding: 20px;
 }
 
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.auth-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.password-input-wrap {
+  position: relative;
+}
+
+.password-input-wrap input {
+  padding-right: 42px;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0;
+}
+
+.password-toggle svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.remember-row {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 10px;
+  color: var(--text);
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.remember-row input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+  margin: 0;
+}
+
+.auth-submit {
+  width: fit-content;
+  min-width: 180px;
+  margin-top: 6px;
+}
+
+.auth-switch {
+  margin-top: 4px;
+}
+
 .content {
   max-width: 1200px;
   margin: 0 auto;
@@ -432,6 +506,61 @@ label {
 }
 .goal-editor input {
   width: 90px;
+}
+.bulk-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.bulk-delete-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid rgba(220, 38, 38, 0.45);
+  border-radius: 8px;
+  background: rgba(220, 38, 38, 0.08);
+  color: var(--text);
+}
+.bulk-delete-actions {
+  display: flex;
+  gap: 8px;
+}
+.select-all-toggle {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.select-all-toggle input,
+.selection-header input,
+.selection-cell input,
+.row-select input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+}
+.selection-header,
+.selection-cell {
+  width: 40px;
+  text-align: center;
+}
+.mobile-job-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.row-select {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
 }
 .progress-bar {
   height: 10px;

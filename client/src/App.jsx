@@ -27,6 +27,28 @@ function AuthShell({ children }) {
   );
 }
 
+function getStoredToken() {
+  return localStorage.getItem('jq_token') || sessionStorage.getItem('jq_token');
+}
+
+function persistToken(nextToken, shouldRemember) {
+  localStorage.removeItem('jq_token');
+  sessionStorage.removeItem('jq_token');
+  localStorage.setItem('jq_remember_me', shouldRemember ? 'true' : 'false');
+
+  if (shouldRemember) {
+    localStorage.setItem('jq_token', nextToken);
+  } else {
+    sessionStorage.setItem('jq_token', nextToken);
+  }
+}
+
+function clearStoredToken() {
+  localStorage.removeItem('jq_token');
+  sessionStorage.removeItem('jq_token');
+  localStorage.removeItem('jq_remember_me');
+}
+
 function getLevelLabel(level) {
   if (level >= 10) return 'Legend';
   if (level >= 6) return 'Pro';
@@ -75,13 +97,13 @@ function MobileNavIcon({ type }) {
 export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [token, setToken] = useState(() => localStorage.getItem('jq_token'));
+  const [token, setToken] = useState(() => getStoredToken());
   const [theme, setTheme] = useState(() => localStorage.getItem('job-tracker-theme') || 'dark');
   const [profile, setProfile] = useState(null);
   const [toasts, setToasts] = useState([]);
 
   const api = useMemo(
-    () => makeApi(async () => localStorage.getItem('jq_token')),
+    () => makeApi(async () => getStoredToken()),
     [token]
   );
   const isAuthenticated = Boolean(token);
@@ -102,7 +124,7 @@ export default function App() {
       .getMe()
       .then(setProfile)
       .catch(() => {
-        localStorage.removeItem('jq_token');
+        clearStoredToken();
         setToken(null);
         setProfile(null);
       });
@@ -138,7 +160,7 @@ export default function App() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('jq_token');
+    clearStoredToken();
     setToken(null);
     setProfile(null);
     navigate('/login');
@@ -203,8 +225,8 @@ export default function App() {
                 ) : (
                   <AuthShell>
                     <Login
-                      onAuth={(nextToken) => {
-                        localStorage.setItem('jq_token', nextToken);
+                      onAuth={(nextToken, shouldRemember = true) => {
+                        persistToken(nextToken, shouldRemember);
                         setToken(nextToken);
                       }}
                     />
@@ -220,8 +242,8 @@ export default function App() {
                 ) : (
                   <AuthShell>
                     <Signup
-                      onAuth={(nextToken) => {
-                        localStorage.setItem('jq_token', nextToken);
+                      onAuth={(nextToken, shouldRemember = true) => {
+                        persistToken(nextToken, shouldRemember);
                         setToken(nextToken);
                       }}
                     />

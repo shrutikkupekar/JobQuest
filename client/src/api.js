@@ -22,6 +22,8 @@ async function request(path, getToken, options = {}) {
   if (!res.ok) {
     if (res.status === 401 && typeof window !== 'undefined') {
       localStorage.removeItem('jq_token');
+      sessionStorage.removeItem('jq_token');
+      localStorage.removeItem('jq_remember_me');
       if (!window.location.pathname.startsWith('/login')) {
         window.location.assign('/login');
       }
