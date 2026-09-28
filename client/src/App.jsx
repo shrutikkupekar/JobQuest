@@ -78,6 +78,14 @@ function MobileNavIcon({ type }) {
     );
   }
 
+  if (type === 'logout') {
+    return (
+      <svg {...common}>
+        <path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H3" />
+      </svg>
+    );
+  }
+
   if (type === 'add') {
     return (
       <svg {...common}>
@@ -274,6 +282,16 @@ export default function App() {
               <MobileNavIcon type="stats" />
               <span>Stats</span>
             </NavLink>
+            <button
+              type="button"
+              className="mobile-nav-item"
+              onClick={() => {
+                if (window.confirm('Log out of Jobquest?')) handleLogout();
+              }}
+            >
+              <MobileNavIcon type="logout" />
+              <span>Log out</span>
+            </button>
           </nav>
         )}
 

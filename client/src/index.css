@@ -1008,7 +1008,7 @@ label {
     bottom: 0;
     z-index: 30;
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 8px;
     padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
     background: color-mix(in srgb, var(--surface) 92%, transparent);
@@ -1027,6 +1027,16 @@ label {
     color: var(--muted);
     font-size: 0.7rem;
     font-weight: 700;
+  }
+
+  button.mobile-nav-item {
+    border: none;
+    background: transparent;
+    font: inherit;
+    font-size: 0.7rem;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 0;
   }
 
   .mobile-nav-item svg {
